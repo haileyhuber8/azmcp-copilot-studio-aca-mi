@@ -10,6 +10,9 @@ param entraAppServerDisplayName string
 @description('Display name for the Client Entra App')
 param entraAppClientDisplayName string
 
+@description('Service Management Reference for the Entra Application. Optional GUID used to link the app to a service in Azure.')
+param serviceManagementReference string = ''
+
 @description('Application Insights connection string. Use "DISABLED" to disable telemetry, or provide existing connection string. If omitted, new App Insights will be created.')
 param appInsightsConnectionString string = ''
 
@@ -33,6 +36,7 @@ module entraAppClient 'modules/entra-app.bicep' = {
     entraAppDisplayName: entraAppClientDisplayName
     entraAppUniqueName: entraAppClientUniqueName
     isServer: false
+    serviceManagementReference: serviceManagementReference
   }
 }
 
@@ -47,6 +51,7 @@ module entraAppServer 'modules/entra-app.bicep' = {
     entraAppScopeDisplayName: 'Azure MCP Storage Tools ReadWrite'
     entraAppScopeDescription: 'Azure MCP Storage Tools Permission to call tools'
     knownClientAppId: entraAppClient.outputs.entraAppClientId
+    serviceManagementReference: serviceManagementReference
   }
 }
 

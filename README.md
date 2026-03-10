@@ -164,3 +164,27 @@ The `azd` template consists of the following Bicep modules:
 - If the client app registration and server app registration are in different tenants, you may see the following error when trying to create the connection.
   - "The app is trying to access a service 'server_app_registration_client_id'(server_app_registration_display_name) that your organization 'client_app_registration_tenant' lacks a service principal for". In this case, a tenant admin of the client app registration must provision a service principal for the server app registration in that tenant. This can be done via an Azure CLI command `az ad sp create --id <server_app_registration_client_id>`. After the service principal is provisioned, trying to create the connection again should trigger the consent flow.
 - If the Power Apps environment has tenant isolation policy, it will block the data flow if the client app registration or the server app registration are in different tenants. To learn more about how to add exception rules to allow these data flow, refer to [cross tenant restrictions](https://learn.microsoft.com/power-platform/admin/cross-tenant-restrictions).
+
+## Common Errors
+
+### ServiceManagementReference field is required
+
+```
+{"error":{"code":"BadRequest","target":"/resources/entraApp","message":"ServiceManagementReference field is required for Update..."}}
+```
+
+This occurs when deploying (`azd up`) an Entra app registration without a `serviceManagementReference`. The Microsoft Graph API requires this field if your organization requires a Service Tree ID that the app should be attributed to.
+
+**Fix:** Pass the GUID via the `serviceManagementReference` parameter. Add it to [infra/main.parameters.json](infra/main.parameters.json):
+
+```json
+{
+  "parameters": {
+    "serviceManagementReference": {
+      "value": "<your-guid>"
+    }
+  }
+}
+```
+
+Then re-run `azd up`. You can generate a GUID or use an existing one — it just needs to be a valid GUID. See the [TSG](https://aka.ms/service-management-reference-error) for details.

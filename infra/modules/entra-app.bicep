@@ -29,14 +29,21 @@ param entraAppScopeDisplayName string = ''
 @description('Description of the app scope')
 param entraAppScopeDescription string = ''
 
+@description('Service Management Reference for the Entra Application. Optional GUID used to link the app to a service in Azure.')
+param serviceManagementReference string = ''
+
 @description('Known client app id')
 param knownClientAppId string = ''
+
+// VS Code client app ID for pre-authorization
+var vsCodeClientAppId = 'aebc6443-996d-45c2-90f0-388ff96faa56'
 
 var scopeId = guid(entraAppUniqueName, entraAppScopeValue)
 
 resource entraApp 'Microsoft.Graph/applications@v1.0' = {
   uniqueName: entraAppUniqueName 
   displayName: entraAppDisplayName
+  serviceManagementReference: !empty(serviceManagementReference) ? serviceManagementReference : null
   api: isServer ? {
     oauth2PermissionScopes: [
       {
@@ -57,9 +64,27 @@ resource entraApp 'Microsoft.Graph/applications@v1.0' = {
           scopeId
         ]
       }
+      {
+        appId: vsCodeClientAppId
+        delegatedPermissionIds: [
+          scopeId
+        ]
+      }
     ]
     requestedAccessTokenVersion: 2
   } : null
+}
+
+resource entraAppUpdate 'Microsoft.Graph/applications@v1.0' = if (isServer) {
+  uniqueName: entraAppUniqueName
+  displayName: entraAppDisplayName
+  serviceManagementReference: !empty(serviceManagementReference) ? serviceManagementReference : null
+  identifierUris: ['api://${entraApp.appId}']
+  api: {
+    oauth2PermissionScopes: entraApp.api.oauth2PermissionScopes
+    preAuthorizedApplications: entraApp.api.preAuthorizedApplications
+    requestedAccessTokenVersion: 2
+  }
 }
 
 output entraAppClientId string = entraApp.appId
